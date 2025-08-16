@@ -1,0 +1,161 @@
+@page
+@model ssotest.Pages.CallbackModel
+@{
+    ViewData["Title"] = "SSO 登入回調";
+}
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3><i class="fas fa-arrow-left"></i> SSO 登入回調結果</h3>
+                </div>
+                <div class="card-body">
+                    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+                    {
+                        <div class="alert alert-danger" role="alert">
+                            <h4 class="alert-heading">登入失敗</h4>
+                            <p>@Model.ErrorMessage</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-success" role="alert">
+                            <h4 class="alert-heading">登入成功！</h4>
+                            <p>以下是從 SSO 提供商返回的參數：</p>
+                        </div>
+                    }
+
+                    <!-- Provider 資訊 -->
+                    <div class="mb-3">
+                        <label class="form-label"><strong>登入提供商:</strong></label>
+                        <div class="form-control" id="providerInfo">載入中...</div>
+                    </div>
+
+                    <!-- 所有 Query Parameters -->
+                    <div class="mb-3">
+                        <label class="form-label"><strong>返回的參數:</strong></label>
+                        @if (Model.QueryParameters.Any())
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th>參數名稱</th>
+                                            <th>參數值</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var param in Model.QueryParameters)
+                                        {
+                                            <tr>
+                                                <td><code>@param.Key</code></td>
+                                                <td class="text-break">
+                                                    @if (param.Key.ToLower().Contains("code") || param.Key.ToLower().Contains("token"))
+                                                    {
+                                                        <span class="text-muted font-monospace">@param.Value</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        @param.Value
+                                                    }
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="alert alert-warning">
+                                沒有收到任何參數
+                            </div>
+                        }
+                    </div>
+
+                    <!-- JSON 格式顯示 -->
+                    <div class="mb-3">
+                        <label class="form-label"><strong>JSON 格式:</strong></label>
+                        <pre class="bg-light p-3 rounded"><code id="jsonData">@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.QueryParameters, new System.Text.Json.JsonSerializerOptions { WriteIndented = true }))</code></pre>
+                    </div>
+
+                    <!-- 操作按鈕 -->
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="/login" class="btn btn-primary">
+                            <i class="fas fa-redo"></i> 重新登入
+                        </a>
+                        <a href="/" class="btn btn-secondary">
+                            <i class="fas fa-home"></i> 回到首頁
+                        </a>
+                        <button type="button" class="btn btn-info" onclick="copyToClipboard()">
+                            <i class="fas fa-copy"></i> 複製 JSON
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 從 sessionStorage 取得 provider 資訊
+    document.addEventListener('DOMContentLoaded', function() {
+        const provider = sessionStorage.getItem('oauth_provider');
+        const state = sessionStorage.getItem('oauth_state');
+        
+        if (provider) {
+            const providerNames = {
+                'microsoft': 'Microsoft Account',
+                'google': 'Google',
+                'line': 'LINE'
+            };
+            
+            document.getElementById('providerInfo').textContent = providerNames[provider] || provider;
+            
+            // 驗證 state 參數
+            const urlParams = new URLSearchParams(window.location.search);
+            const returnedState = urlParams.get('state');
+            
+            if (state && returnedState && state !== returnedState) {
+                document.querySelector('.card-body').insertAdjacentHTML('afterbegin', 
+                    '<div class="alert alert-warning" role="alert">' +
+                    '<strong>警告:</strong> State 參數不匹配，可能存在安全風險！' +
+                    '</div>'
+                );
+            }
+        } else {
+            document.getElementById('providerInfo').textContent = '未知';
+        }
+        
+        // 清理 sessionStorage
+        sessionStorage.removeItem('oauth_provider');
+        sessionStorage.removeItem('oauth_state');
+    });
+
+    function copyToClipboard() {
+        const jsonData = document.getElementById('jsonData').textContent;
+        navigator.clipboard.writeText(jsonData).then(function() {
+            // 顯示成功訊息
+            const button = event.target;
+            const originalText = button.innerHTML;
+            button.innerHTML = '<i class="fas fa-check"></i> 已複製！';
+            button.classList.remove('btn-info');
+            button.classList.add('btn-success');
+            
+            setTimeout(function() {
+                button.innerHTML = originalText;
+                button.classList.remove('btn-success');
+                button.classList.add('btn-info');
+            }, 2000);
+        }).catch(function(err) {
+            console.error('複製失敗: ', err);
+            alert('複製失敗，請手動選取文字複製');
+        });
+    }
+</script>
+
+@section Scripts {
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+}

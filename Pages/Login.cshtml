@@ -1,0 +1,144 @@
+@page
+@model ssotest.Pages.LoginModel
+@{
+    ViewData["Title"] = "SSO 登入";
+}
+
+<div class="text-center">
+    <h1 class="display-4">SSO 登入</h1>
+    <p>請選擇您要使用的登入方式</p>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">選擇登入方式</h5>
+
+                <!-- Microsoft Account 登入按鈕 -->
+                <button type="button" class="btn btn-primary btn-lg w-100 mb-3" onclick="loginWithMicrosoft()">
+                    <i class="fab fa-microsoft me-2"></i>使用 Microsoft Account 登入
+                </button>
+
+                <!-- Google 登入按鈕 -->
+                <button type="button" class="btn btn-danger btn-lg w-100 mb-3" onclick="loginWithGoogle()">
+                    <i class="fab fa-google me-2"></i>使用 Google 登入
+                </button>
+
+                <!-- LINE 登入按鈕 -->
+                <button type="button" class="btn btn-success btn-lg w-100 mb-3" onclick="loginWithLINE()">
+                    <i class="fab fa-line me-2"></i>使用 LINE 登入
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 從 Razor 頁面取得設定值
+    const ssoConfig = {
+        microsoft: {
+            clientId: '@Model.MicrosoftClientId',
+            tenantId: '@Model.MicrosoftTenantId',
+            redirectUri: '@Model.RedirectUri'
+        },
+        google: {
+            clientId: '@Model.GoogleClientId',
+            redirectUri: '@Model.RedirectUri'
+        },
+        line: {
+            clientId: '@Model.LineClientId',
+            redirectUri: '@Model.RedirectUri'
+        }
+    };
+
+    function generateRandomString(length = 32) {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+        let result = '';
+        for (let i = 0; i < length; i++) {
+            result += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return result;
+    }
+
+    async function generateCodeChallenge(codeVerifier) {
+        const encoder = new TextEncoder();
+        const data = encoder.encode(codeVerifier);
+        const digest = await window.crypto.subtle.digest('SHA-256', data);
+        return btoa(String.fromCharCode.apply(null, new Uint8Array(digest)))
+            .replace(/\+/g, '-')
+            .replace(/\//g, '_')
+            .replace(/=+$/, '');
+    }
+
+    function loginWithMicrosoft() {
+        const state = generateRandomString();
+        const nonce = generateRandomString();
+
+        sessionStorage.setItem('oauth_state', state);
+        sessionStorage.setItem('oauth_provider', 'microsoft');
+
+        const params = new URLSearchParams({
+            client_id: ssoConfig.microsoft.clientId,
+            response_type: 'code',
+            redirect_uri: ssoConfig.microsoft.redirectUri,
+            response_mode: 'query',
+            scope: 'openid profile email',
+            state: state,
+            // prompt: 'login', //強制重新輸入帳密
+            nonce: nonce
+        });
+
+        const authUrl = `https://login.microsoftonline.com/${ssoConfig.microsoft.tenantId}/oauth2/v2.0/authorize?${params}`;
+        window.location.href = authUrl;
+    }
+
+    function loginWithGoogle() {
+        const state = generateRandomString();
+
+        sessionStorage.setItem('oauth_state', state);
+        sessionStorage.setItem('oauth_provider', 'google');
+
+        const params = new URLSearchParams({
+            client_id: ssoConfig.google.clientId,
+            redirect_uri: ssoConfig.google.redirectUri,
+            response_type: 'code',
+            scope: 'openid profile email',
+            state: state,
+            access_type: 'offline',
+            // max_age: 0,
+            // prompt: 'select_account' //強制重新選擇帳號
+        });
+
+        const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
+        window.location.href = authUrl;
+    }
+
+    // LINE 登入
+    function loginWithLINE() {
+        const state = generateRandomString();
+        const nonce = generateRandomString();
+
+        sessionStorage.setItem('oauth_state', state);
+        sessionStorage.setItem('oauth_provider', 'line');
+
+        const params = new URLSearchParams({
+            response_type: 'code',
+            client_id: ssoConfig.line.clientId,
+            redirect_uri: ssoConfig.line.redirectUri,
+            state: state,
+            scope: 'profile openid email',
+            //prompt:'login',
+            //max_age:0,
+            //disable_auto_login:true, //強制重新輸入帳密
+            nonce: nonce
+        });
+
+        const authUrl = `https://access.line.me/oauth2/v2.1/authorize?${params}`;
+        window.location.href = authUrl;
+    }
+</script>
+
+@section Scripts {
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+}
