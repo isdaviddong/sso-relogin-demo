@@ -1,21 +1,21 @@
 # SSO 登入設定說明
 
-本專案實作了純 JavaScript 的 SSO 登入功能，支援 Microsoft Account、Google 和 LINE 三種登入方式。
+本範例專案實作了純 JavaScript 的 SSO 登入功能，支援 Microsoft Account、Google 和 LINE 三種登入方式。
 
-## 功能特色
+## 範例特色
 
 - ✅ 純 JavaScript 實作，不依賴 ASP.NET Core OAuth middleware
 - ✅ 支援三種 SSO 提供商：Microsoft Account、Google、LINE
 - ✅ 統一的 callback 頁面顯示所有返回參數
 - ✅ 安全的 state 參數驗證
 - ✅ 從 appsettings.json 讀取設定
-- ✅ 響應式設計，美觀的 UI
+- ✅ 展示如何強制重新登入 👈 這個是重點
 
 ## 頁面結構
 
 - `/` - 首頁，包含登入測試連結
 - `/login` - SSO 登入頁面，包含三個登入按鈕
-- `/callback` - 統一的 callback 頁面，顯示所有返回參數
+- `/callback` - 統一的 callback 頁面，顯示所有返回參數(不實作取得token，僅到取得code)
 
 ## 設定各 SSO 提供商
 
@@ -27,7 +27,7 @@
 4. 設定應用程式：
    - Name: `SSO Test App`
    - Supported account types: `Accounts in any organizational directory and personal Microsoft accounts`
-   - Redirect URI: `Web` - `https://localhost:7000/callback`
+   - Redirect URI: `Web` - `https://localhost:5249/callback`
 5. 註冊後，複製 **Application (client) ID**
 6. 在 `appsettings.json` 中更新 `SSO:Microsoft:ClientId`
 
@@ -41,7 +41,7 @@
 6. 設定應用程式：
    - Application type: `Web application`
    - Name: `SSO Test App`
-   - Authorized redirect URIs: `https://localhost:7000/callback`
+   - Authorized redirect URIs: `https://localhost:5249/callback`
 7. 複製 **Client ID**
 8. 在 `appsettings.json` 中更新 `SSO:Google:ClientId`
 
@@ -53,7 +53,7 @@
    - Channel type: `LINE Login`
    - Channel name: `SSO Test App`
 4. 在 Channel 設定中：
-   - Callback URL: `https://localhost:7000/callback`
+   - Callback URL: `https://localhost:5249/callback`
    - 啟用需要的 scope：`profile`, `openid`, `email`
 5. 複製 **Channel ID**
 6. 在 `appsettings.json` 中更新 `SSO:LINE:ClientId`
@@ -66,17 +66,17 @@
 {
   "SSO": {
     "Microsoft": {
-      "ClientId": "your-actual-microsoft-client-id",
+      "ClientId": "👉your-actual-microsoft-client-id",
       "TenantId": "common",
-      "RedirectUri": "https://localhost:7000/callback"
+      "RedirectUri": "https://localhost:5249/callback"
     },
     "Google": {
-      "ClientId": "your-actual-google-client-id",
-      "RedirectUri": "https://localhost:7000/callback"
+      "ClientId": "👉your-actual-google-client-id",
+      "RedirectUri": "https://localhost:5249/callback"
     },
     "LINE": {
-      "ClientId": "your-actual-line-client-id",
-      "RedirectUri": "https://localhost:7000/callback"
+      "ClientId": "👉your-actual-line-client-id",
+      "RedirectUri": "https://localhost:5249/callback"
     }
   }
 }
@@ -126,6 +126,6 @@ dotnet run
   - 可使用 `disable_auto_login=true` 或指定 `prompt` / `nonce` 來強制登入。請參考：Pages/Login.cshtml 中 loginWithLINE() 的註解（有 // disable_auto_login:true 範例）。
 
 範例操作步驟（開發者測試）
-1. 打開 d:\ssotest\Pages\Login.cshtml。
+1. 打開 Login 頁面。
 2. 在對應登入函式（loginWithMicrosoft / loginWithGoogle / loginWithLINE）中，將欲啟用的註解行解除註解，例如把 `// prompt: 'login'` 改為 `prompt: 'login'`。
 3. 重新啟動應用並使用瀏覽器測試，確認會導至每次要求重新輸入或選擇帳號的登入畫面。
