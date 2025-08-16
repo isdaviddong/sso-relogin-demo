@@ -107,4 +107,25 @@
 dotnet run
 ```
 
-然後前往 `https://localhost:7000` 開始測試 SSO 登入功能。
+然後前往 `https://localhost:5249` 開始測試 SSO 登入功能。
+
+<!-- 新增：強調為範例與重新登入說明 -->
+> 注意：本專案為示範範例（sample）。示範如何在純前端（純 JavaScript）流程中發起 SSO 登入、處理 callback 以及如何「強制重新登入（force re-login）」。請在真實產品中依安全需求調整實作（例如使用後端交換 code、保護 client secret、使用 PKCE、CSRF 防護等）。
+
+## 重新登入（Force re-login）
+
+若需要在使用者已有登入狀態下強制要求重新驗證帳號或選擇不同帳號，可使用各 SSO 提供者的 `prompt`、`max_age`、或 provider-specific 參數。範例實作的位置：Pages/Login.cshtml 中的 JavaScript 登入函式內已有對應的註解，直接解除註解即可啟用強制重新登入。
+
+- Microsoft (Azure AD)
+  - 可使用 `prompt=login` 或改變 `nonce`/`state` 以強制重新驗證。請參考：Pages/Login.cshtml 中 loginWithMicrosoft() 的註解（有 // prompt: 'login' 範例）。
+
+- Google
+  - 可使用 `prompt=select_account` 或 `max_age=0` 強制要求重新選擇或重新登入。請參考：Pages/Login.cshtml 中 loginWithGoogle() 的註解（有 // prompt: 'select_account' 與 // max_age: 0 範例）。
+
+- LINE
+  - 可使用 `disable_auto_login=true` 或指定 `prompt` / `nonce` 來強制登入。請參考：Pages/Login.cshtml 中 loginWithLINE() 的註解（有 // disable_auto_login:true 範例）。
+
+範例操作步驟（開發者測試）
+1. 打開 d:\ssotest\Pages\Login.cshtml。
+2. 在對應登入函式（loginWithMicrosoft / loginWithGoogle / loginWithLINE）中，將欲啟用的註解行解除註解，例如把 `// prompt: 'login'` 改為 `prompt: 'login'`。
+3. 重新啟動應用並使用瀏覽器測試，確認會導至每次要求重新輸入或選擇帳號的登入畫面。
